@@ -4,11 +4,12 @@ The HTML format can be edited in templates/home.html.<br>
 Always turn on venv before starting to code.<br>
 
 How to turn on virtual environment (venv):
-- source .venv/bin/activate
+- mac: source .venv/bin/activate
+- non-mac (aka powershell): .venv\Scripts\Activate
 
 If you add more imports, make sure to do this in the terminal:
 - install in the terminal of VS Code
-- pip freeze > requirements.txt
+- python -m pip install <package-name>
 
 To run app:
 - in terminal: python3 main.py
