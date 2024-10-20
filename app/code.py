@@ -1,5 +1,6 @@
 
 from flask import Blueprint, render_template, request
+import openai
 
 code = Blueprint('code', __name__)
 
