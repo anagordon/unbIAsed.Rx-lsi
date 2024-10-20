@@ -7,5 +7,5 @@ How to turn on virtual environment (venv):
 - source .venv/bin/activate
 
 If you add more imports, make sure to do this in the terminal:
-- pip freeze > requirements.txt
+- pip install -r requirements.txt
 
