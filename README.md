@@ -21,7 +21,7 @@ How to turn on virtual environment (venv):
 
 To update requirements list (if new imports were added, always do this out of practice):
 - in the terminal of VS Code
-- python -m pip install <package-name>
+- python -m pip install package-name
 
 To run app:
 - in terminal: python3 main.py
