@@ -10,3 +10,5 @@ If you add more imports, make sure to do this in the terminal:
 - install in the terminal of VS Code
 - pip freeze > requirements.txt
 
+To run app:
+- in terminal: python3 main.py
