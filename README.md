@@ -4,7 +4,7 @@ The HTML format can be edited in templates/home.html.<br>
 Always turn on venv before starting to code.<br>
 
 How to turn on virtual environment (venv):
-- source env/bin/activate
+- source .venv/bin/activate
 
 If you add more imports, make sure to do this in the terminal:
 - pip freeze > requirements.txt
