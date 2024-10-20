@@ -6,6 +6,7 @@ code = Blueprint('code', __name__)
 @code.route('/', methods=['GET', 'POST'])
 def index():
     #Write Code Here
+    #testing
     result = ""
 
     if request.method == 'POST':
@@ -14,3 +15,4 @@ def index():
         return render_template('home.html', result=result)
     
     return render_template('home.html')
+
