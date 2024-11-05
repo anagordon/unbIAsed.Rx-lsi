@@ -1,7 +1,6 @@
 from flask import Blueprint, render_template, request
 import openai
 import json
-import pandas as pd
 from transformers import BertTokenizer, BertModel, BertForSequenceClassification
 import torch
 import pandas as pd
