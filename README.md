@@ -27,3 +27,7 @@ Add openai key (since it is not pushed in the repo)
 
 To run app:
 - in terminal: python3 main.py
+
+Note: the following files were not able to be pushed (potentially might need to uninstall and reinstall the torch and tensorflow packages)
+![image](https://github.com/user-attachments/assets/85243bc4-95b2-415e-988a-298f151ac651)
+
