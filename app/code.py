@@ -4,6 +4,7 @@ import openai
 import requests
 import json
 import pandas as pd
+from requests.adapters import HTTPAdapter, Retry
 from transformers import BertTokenizer, BertModel, BertForSequenceClassification
 from transformers import AutoTokenizer, AutoModel
 import torch
@@ -24,6 +25,26 @@ os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
 
 code = Blueprint('code', __name__)
+
+# Function to create a requests session with retries
+def requests_retry_session(
+    retries=3,
+    backoff_factor=0.3,
+    status_forcelist=(500, 502, 504),
+    session=None,
+):
+    session = session or requests.Session()
+    retry = Retry(
+        total=retries,
+        read=retries,
+        connect=retries,
+        backoff_factor=backoff_factor,
+        status_forcelist=status_forcelist,
+    )
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount('http://', adapter)
+    session.mount('https://', adapter)
+    return session
 
 @code.route('/', methods=['GET', 'POST'])
 def index():
@@ -263,7 +284,7 @@ def index():
         #CHATGPT QUERY
 
         # Set the API key directly (make sure it's correct)
-        openai.api_key = '' #add your API key here
+        openai.api_key = os.getenv('OPENAI_API_KEY')
 
         # Prepare your question for ChatGPT
         results_summary = (
