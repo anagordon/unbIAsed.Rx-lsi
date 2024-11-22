@@ -23,6 +23,7 @@ import requests
 # Set environment variables to resolve OpenMP runtime conflict and disable oneDNN custom operations
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
+os.environ["OPENAI_API_KEY"] = "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"
 
 code = Blueprint('code', __name__)
 
