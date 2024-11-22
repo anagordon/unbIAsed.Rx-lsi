@@ -263,7 +263,7 @@ def index():
         #CHATGPT QUERY
 
         # Set the API key directly (make sure it's correct)
-        # openai.api_key = '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'
+        openai.api_key = '' #add your API key here
 
         # Prepare your question for ChatGPT
         results_summary = (

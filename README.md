@@ -23,5 +23,7 @@ To update requirements list (if new imports were added, always do this out of pr
 - in the terminal of VS Code
 - python -m pip install package-name
 
+Add openai key (since it is not pushed in the repo)
+
 To run app:
 - in terminal: python3 main.py
