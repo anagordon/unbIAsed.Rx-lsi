@@ -23,7 +23,7 @@ import requests
 # Set environment variables to resolve OpenMP runtime conflict and disable oneDNN custom operations
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
-os.environ["OPENAI_API_KEY"] = "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"
+os.environ["OPENAI_API_KEY"] = "" # Add your OpenAI API key here
 
 code = Blueprint('code', __name__)
 
@@ -293,35 +293,59 @@ def index():
             f"Relevant ADR Reports:\n{results_dict['Relevant_ADR_reports']}\n\n"
             f"ADR Statistics:\n{results_dict['ADR_statistics']}"
         )
+        
         # Format the prompt using an f-string
-        prompt = f"""
-        A patient wants to know what are the risks of getting an adverse drug reaction to {Medication} taken to treat {Disease}. 
-        They are a {Age}-year-old {Ethnicity} {Sex}. 
-        To assess the chance that they may have an adverse reaction, please find attached the eligibility criteria for clinical trials for this drug, 
-        the most relevant reported adverse drug reactions, and some statistics about the reports made for this disease. 
-        Based on this information, all trials, and the adverse drug reaction reports, can you tell them what their risk 
-        of having an adverse reaction to this particular drug could be in likelihood based on their race, age, and gender? 
-        When not sure, please say so. When you are confident, please give likelihoods and explanation. 
-        Please always format your response as follows:
+        # prompt = f"""
+        # A patient wants to know what are the risks of getting an adverse drug reaction to {Medication} taken to treat {Disease}. 
+        # They are a {Age}-year-old {Ethnicity} {Sex}. 
+        # To assess the chance that they may have an adverse reaction, please find attached the eligibility criteria for clinical trials for this drug, 
+        # the most relevant reported adverse drug reactions, and some statistics about the reports made for this disease. 
+        # Based on this information, all trials, and the adverse drug reaction reports, can you tell them what their risk 
+        # of having an adverse reaction to this particular drug could be in likelihood based on their race, age, and gender? 
+        # When not sure, please say so. When you are confident, please give likelihoods and explanation. 
+        # Please always format your response as follows:
 
-        1. Clinical Trial
-            - Is the patient well represented in the clinical trial for that medication for age, sex and ethnicity, consider all trials?
+        # 1. Clinical Trial
+        #     - Is the patient well represented in the clinical trial for that medication for age, sex and ethnicity, consider all trials?
         
-        2. Statistics about the recorded side effect
-            - Look at the ADR Statistic and compare it to the patients characteristics: age and sex
+        # 2. Statistics about the recorded side effect
+        #     - Look at the ADR Statistic and compare it to the patients characteristics: age and sex
         
-        3. Most relevant ADR reports
-            - look at the most Relevant ADR reports and compare it to the patients characteristics, age and sex
-            - Go into the specifics of what kind of adverse reaction the patients exhibited for that medication
-            - Consider all very relevant reports
+        # 3. Most relevant ADR reports
+        #     - look at the most Relevant ADR reports and compare it to the patients characteristics, age and sex
+        #     - Go into the specifics of what kind of adverse reaction the patients exhibited for that medication
+        #     - Consider all very relevant reports
         
-        4. Risk Assessment
-            - Likelihood of ADRs based on the patient's age, ethnicity, and gender
-            - Any relevant caveats or uncertainties
+        # 4. Risk Assessment
+        #     - Likelihood of ADRs based on the patient's age, ethnicity, and gender
+        #     - Any relevant caveats or uncertainties
         
-        5. Recommendation
-            - Final summary and any suggested actions for the patient
-        """
+        # 5. Recommendation
+        #     - Final summary and any suggested actions for the patient
+        # """
+        prompt = (
+            f"A patient wants to know what are the risks of getting an adverse drug reaction to {Medication} taken to treat {Disease}. "
+            f"They are a {Age}-year-old {Ethnicity} {Sex}. "
+            "To assess the chance that they may have an adverse reaction, please find attached the eligibility criteria for clinical trials for this drug, "
+            "the most relevant reported adverse drug reactions, and some statistics about the reports made for this disease. "
+            "Based on this information, all trials, and the adverse drug reaction reports, can you tell them what their risk "
+            "of having an adverse reaction to this particular drug could be in likelihood based on their race, age, and gender? "
+            "When not sure, please say so. When you are confident, please give likelihoods and explanation. "
+            "Please always format your response as follows:\n\n"
+            f"1. Clinical Trial\n"
+            "    - Is the patient well represented in the clinical trial for that medication for age, sex and ethnicity, consider all trials?\n\n"
+            f"2. Statistics about the recorded side effect\n"
+            "    - Look at the ADR Statistic and compare it to the patients characteristics: age and sex\n"
+            f"3. Most relevant ADR reports\n"
+            "    - look at the most Relevant ADR reports and compare it to the patients characteristics, age and sex\n\n"
+            "    - Go into the specifics of what kind of adverse reaction the patients exhibited for that medication\n\n"
+            "    - Consider all very relevant reports\n\n"
+            "4. Risk Assessment\n"
+            "    - Likelihood of ADRs based on the patient's age, ethnicity, and gender\n"
+            "    - Any relevant caveats or uncertainties\n\n"
+            "5. Recommendation\n"
+            "    - Final summary and any suggested actions for the patient\n\n"
+        )
         combined_content = f"{prompt}\n\n{results_summary}"
 
         # Call ChatGPT API
@@ -335,8 +359,8 @@ def index():
         )
 
         # Print the response
-        result = response['choices'][0]['message']['content']
-        print("ChatGPT Response: \n\n", result)
+        result = response['choices'][0]['message']['content'].strip()
+        # print("ChatGPT Response: \n\n", result)
         # Flatten trial_ids and remove any unwanted formatting
         cleaned_trial_ids = []
         for trial_id in trial_ids:
@@ -349,8 +373,8 @@ def index():
         trial_ids_string = ", ".join(cleaned_trial_ids)
 
         # Print the cleaned result
-        trials = (f"Relevant clinical trials analyzed:", trial_ids_string, "are accessible for consultation at https://clinicaltrials.gov/")
-        source = (f"Adverse drug reaction reports have been sourced from the MedEffect Canada database: https://www.canada.ca/en/health-canada/services/drugs-health-products/medeffect-canada.html")
+        trials = f"Relevant clinical trials analyzed: {trial_ids_string} are accessible for consultation at https://clinicaltrials.gov/"
+        source = f"Adverse drug reaction reports have been sourced from the MedEffect Canada database: https://www.canada.ca/en/health-canada/services/drugs-health-products/medeffect-canada.html"
 
         return render_template('home.html', result=result, trials=trials, source=source)
     
