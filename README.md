@@ -1,4 +1,4 @@
-Welcome to UnbIAsed-Rx's new machine learning module! To see our current website (not yet updated with the new module), visit [unbiased-rx.com].
+Welcome to UnbIAsed-Rx's new machine learning module! To see our current website (not yet updated with the new module), visit [unbiased-rx.com]([unbiased-rx.com).
 
 To run the web application, make sure to turn on the virtual environment (venv), to have the proper requirements installed. <br>
 Add python code in the code.py file. Add all code in the index() function. See example on how variables are passed into the front-end (HTML). <br>
