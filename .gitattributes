@@ -1,3 +1,6 @@
 app/ADRdata.csv filter=lfs diff=lfs merge=lfs -text
 app/merged_index_19000.index filter=lfs diff=lfs merge=lfs -text
 app/merged_metadata_19000.csv filter=lfs diff=lfs merge=lfs -text
+new_venv/Lib/site-packages/torch/lib/dnnl.lib filter=lfs diff=lfs merge=lfs -text
+new_venv/Lib/site-packages/torch/lib/torch_cpu.dll filter=lfs diff=lfs merge=lfs -text
+new_venv/Lib/site-packages/tensorflow/python/_pywrap_tensorflow_internal.pyd filter=lfs diff=lfs merge=lfs -text

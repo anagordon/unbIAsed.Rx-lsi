@@ -1,31 +1,27 @@
-
 from flask import Blueprint, render_template, request
 import openai
-import requests
 import json
-import pandas as pd
-from requests.adapters import HTTPAdapter, Retry
-from transformers import BertTokenizer, BertModel, BertForSequenceClassification
-from transformers import AutoTokenizer, AutoModel
+from transformers import BertTokenizer, BertModel, BertForSequenceClassification, AutoTokenizer, AutoModel
 import torch
 import pandas as pd
-from sklearn.manifold import TSNE
-import matplotlib.pyplot as plt
 import os
 import numpy as np
 import seaborn as sns
 import tensorflow_hub as hub
 import faiss
-import torch.nn as nn
+# import torch.nn as nn
 import re
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 # Set environment variables to resolve OpenMP runtime conflict and disable oneDNN custom operations
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
-os.environ["OPENAI_API_KEY"] = "" # Add your OpenAI API key here
+os.environ["OPENAI_API_KEY"] = "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" #make sure to insert your own API key here
 
 code = Blueprint('code', __name__)
+
 
 # Function to create a requests session with retries
 def requests_retry_session(
@@ -47,20 +43,19 @@ def requests_retry_session(
     session.mount('https://', adapter)
     return session
 
+
 @code.route('/', methods=['GET', 'POST'])
 def index():
     #Write Code Here
     result = ""
-    trials = ""
-    source = ""
 
     if request.method == 'POST':
-        #Get values from form
-        Medication = request.form['Medication']
-        Disease = request.form['Disease']
-        Age = request.form['Age']
-        Sex = request.form['Sex']
-        Ethnicity = request.form['Ethnicity']
+        # Variables
+        Medication = request.form.get('Medication')
+        Age = request.form.get('Age')
+        Sex = request.form.get('Sex')
+        Disease = request.form.get('Disease')
+        Ethnicity = request.form.get('Ethnicity')
 
         # Initialize the results dictionary
         results_dict = {
@@ -70,19 +65,22 @@ def index():
         }
 
         #EXTRACT THE CLINICAL TRIALS FOR A SPECIFIC MEDICATION AND DISEASE
-        # Define the payload for the request
         payload = {
             "query.cond": Disease,
             "query.term": Medication,
             "filter.overallStatus": 'COMPLETED',
             "query.intr": Medication,
-        }
+            "sort": "@relevance:desc",
 
-        # Define the URL and make the request
+        }
         url = "https://clinicaltrials.gov/api/v2/studies"
+
+        # Check if the request was successful
         response = requests.get(url, params=payload)
 
-        # Define the DotDict class
+        list(response.json().items())[0]
+        json.dumps(response.json()['studies'][0])
+
         class DotDict(dict):
             __getattr__ = dict.__getitem__
             __setattr__ = dict.__setitem__
@@ -106,55 +104,38 @@ def index():
 
                 # Collect clinical trial data as a string
                 clinical_trial_data = []
-
                 for idx, study_data in enumerate(studies):
                     study = DotDict(study_data)
                     try:
-                        # Get the study number (nctId)
-                        nct_id = study.protocolSection.identificationModule.nctId
-
                         # Check if the required nested attributes are present
                         if (
                             hasattr(study, 'resultsSection') and
                             hasattr(study.resultsSection, 'baselineCharacteristicsModule') and
                             hasattr(study.resultsSection.baselineCharacteristicsModule, 'measures')
                         ):
-                            # Add the study number and clinical trial data
-                            clinical_trial_data.append(f"Study {nct_id}:\n")
+                            clinical_trial_data.append(f"Study {idx + 1}:\n")
                             clinical_trial_data.append(f"{study.protocolSection.eligibilityModule}\n")
                             clinical_trial_data.append(f"{study.resultsSection.baselineCharacteristicsModule.measures}\n\n")
-                            trial_ids.append({nct_id})
                     except (KeyError, AttributeError):
                         continue
-
-                # Save clinical trial data as a string in results_dict
-                results_dict["Clinical_trial_data"] = ''.join(clinical_trial_data)
-
+                results_dict["Clinical_trial_data"] = ''.join(clinical_trial_data)  # Save clinical trial data as string
 
             except requests.exceptions.JSONDecodeError:
                 print("Failed to decode JSON. Here is the raw response:")
-                print(response.text)
+                # print(response.text)
         else:
             print(f"Request failed with status code: {response.status_code}")
-            print(response.text)
+            # print(response.text)
 
-        #GET THE ADR REPORT STATISTICS FOR SPECIFIC MEDICATION 
-        #NEED MEDICATION EMBEDDINGS *******
-       
-        # File path
-        path_ADRdata = 'app/ADRdata.csv' #check if this is the correct path
-
-        # Load the CSV file
-        df = pd.read_csv(path_ADRdata, delimiter='\t')
+        #GET THE ADR REPORT STATISTICS FOR SPECIFIC MEDICATION
+        csv_file_path = os.path.join(os.path.dirname(__file__), 'ADRdata.csv')
+        df = pd.read_csv(csv_file_path, delimiter='\t')
 
         # Define the specific string you're looking for
         specific_string = Medication.upper()
 
         # Filter rows where the DRUGNAME column contains the specific string
         filtered_df = df[df['DRUGNAME'].str.contains(specific_string, case=False, na=False)]
-
-        # @Vin: Now, replace df with filtered_df because you use `df` variable for stats below
-        df = filtered_df
 
         # ---- GET AGE INFORMATION -----
         # Define age bins and labels for grouping
@@ -180,7 +161,7 @@ def index():
         male_percentage = gender_percentages.get('Male', 0)
         gender_sentence = f"Out of all the reports, {female_percentage:.2f}% were women's and {male_percentage:.2f}% were men's."
 
-        # ----- GET SERIOUSNESS INFORMATION -----  POTENTIALLY REMOVE
+        # ----- GET SERIOUSNESS INFORMATION -----
         seriousness_counts = df['SERIOUSNESS_ENG'].value_counts()
         seriousness_percentages = (seriousness_counts / seriousness_counts.sum()) * 100
 
@@ -191,13 +172,16 @@ def index():
         # Combine all sentences into one string and save to ADR_statistics key
         results_dict["ADR_statistics"] = f"{age_group_sentence}\n{gender_sentence}\n{seriousness_sentence}"
 
-
         #GET MOST RELEVANT ADR REPORTS
+        #Load BERT model and tokenizer
+        # tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+        # model = BertForSequenceClassification.from_pretrained('bert-base-uncased', output_hidden_states=True)
+
         model_str = "NeuML/pubmedbert-base-embeddings"
         tokenizer = AutoTokenizer.from_pretrained(model_str)
         model = AutoModel.from_pretrained(model_str)
 
-        # ANA - VIN - AIMEE updated november 21st
+        # Function to get sentence embeddings
         def get_sentence_embedding(sentences):
             batch_size = 32
             embeddings = []
@@ -218,26 +202,29 @@ def index():
 
             return embeddings
 
+                
         # Load FAISS index and metadata
-        # C
-        index_path = os.path.join(os.path.dirname(__file__), 'merged_index_19000.index')
-        metadata_path = os.path.join(os.path.dirname(__file__), 'merged_metadata_19000.csv')
+        index_file_path = os.path.join(os.path.dirname(__file__), 'merged_index_19000.index')
+        index = faiss.read_index(index_file_path)
 
-         # Load the metadata
-        if not os.path.exists(metadata_path):
-            raise Exception(f"Metadata file not found: {metadata_path}")
-        metadata_df = pd.read_csv(metadata_path)
-
-        # Load the FAISS index
-        if os.path.exists(index_path):
-            index = faiss.read_index(index_path)
-        else:
-            raise Exception(f"No FAISS index file found at: {index_path}")
+        metadata_file_path = os.path.join(os.path.dirname(__file__), 'merged_metadata_19000.csv')
+        metadata_df = pd.read_csv(metadata_file_path)
 
         # Function to query the FAISS database - UPDATED VIN'S VERSION november 21st
         def query_database(query_sentence, index_path, metadata_path, top_k=10):
+            # Load the metadata
+            if not os.path.exists(metadata_path):
+                raise Exception(f"Metadata file not found: {metadata_path}")
+            metadata_df = pd.read_csv(metadata_path)
+
             # Generate query embedding
             query_embedding = np.array(get_sentence_embedding([query_sentence])).astype('float32')
+
+            # Load the FAISS index
+            if os.path.exists(index_path):
+                index = faiss.read_index(index_path)
+            else:
+                raise Exception(f"No FAISS index file found at: {index_path}")
 
             # Perform the search
             similarities, indices = index.search(query_embedding, top_k * 3)
@@ -265,14 +252,13 @@ def index():
 
         # Query the database
         query_sentence = f"{Sex} {Age} {Medication} {Disease}"
-        index_path = os.path.join(os.path.dirname(__file__), 'merged_index_1900.index')
-        metadata_path = os.path.join(os.path.dirname(__file__), 'merged_metadata_1900.csv')
-        similar_sentence, distances = query_database(query_sentence, index_path=index_path, metadata_path=metadata_path)
+        # index_path = '/content/drive/My Drive/Programs/BOREALISAI/RAGModel/Data/merged_index_19000.index'
+        # metadata_path = '/content/drive/My Drive/Programs/BOREALISAI/RAGModel/Data/merged_metadata_19000.csv'
+        similar_sentence, distances = query_database(query_sentence, index_file_path, metadata_file_path, top_k=10)
 
         # Format the results and store in the dictionary
         formatted_results = "Top 10 most similar sentences with distances:\n"
         formatted_results += "Report ID\tGender\tAge\tSeriousness\tOther Medical Conditions\tHeight\tWeight\tSide Effect Name\tSystem Organ Affected\tMedication\tIndication\tSimilarity Score\n"
-
 
         for sentence, distance in zip(similar_sentence, distances):
             formatted_results += f"{sentence}\t{distance}\n"
@@ -281,11 +267,8 @@ def index():
         # Add to the dictionary under the "Relevant_ADR_reports" key
         results_dict["Relevant_ADR_reports"] = formatted_results
 
-
         #CHATGPT QUERY
-
-        # Set the API key directly (make sure it's correct)
-        openai.api_key = os.getenv('OPENAI_API_KEY')
+        openai.api_key = os.getenv("OPENAI_API_KEY")
 
         # Prepare your question for ChatGPT
         results_summary = (
@@ -293,36 +276,7 @@ def index():
             f"Relevant ADR Reports:\n{results_dict['Relevant_ADR_reports']}\n\n"
             f"ADR Statistics:\n{results_dict['ADR_statistics']}"
         )
-        
         # Format the prompt using an f-string
-        # prompt = f"""
-        # A patient wants to know what are the risks of getting an adverse drug reaction to {Medication} taken to treat {Disease}. 
-        # They are a {Age}-year-old {Ethnicity} {Sex}. 
-        # To assess the chance that they may have an adverse reaction, please find attached the eligibility criteria for clinical trials for this drug, 
-        # the most relevant reported adverse drug reactions, and some statistics about the reports made for this disease. 
-        # Based on this information, all trials, and the adverse drug reaction reports, can you tell them what their risk 
-        # of having an adverse reaction to this particular drug could be in likelihood based on their race, age, and gender? 
-        # When not sure, please say so. When you are confident, please give likelihoods and explanation. 
-        # Please always format your response as follows:
-
-        # 1. Clinical Trial
-        #     - Is the patient well represented in the clinical trial for that medication for age, sex and ethnicity, consider all trials?
-        
-        # 2. Statistics about the recorded side effect
-        #     - Look at the ADR Statistic and compare it to the patients characteristics: age and sex
-        
-        # 3. Most relevant ADR reports
-        #     - look at the most Relevant ADR reports and compare it to the patients characteristics, age and sex
-        #     - Go into the specifics of what kind of adverse reaction the patients exhibited for that medication
-        #     - Consider all very relevant reports
-        
-        # 4. Risk Assessment
-        #     - Likelihood of ADRs based on the patient's age, ethnicity, and gender
-        #     - Any relevant caveats or uncertainties
-        
-        # 5. Recommendation
-        #     - Final summary and any suggested actions for the patient
-        # """
         prompt = (
             f"A patient wants to know what are the risks of getting an adverse drug reaction to {Medication} taken to treat {Disease}. "
             f"They are a {Age}-year-old {Ethnicity} {Sex}. "
@@ -332,6 +286,7 @@ def index():
             "of having an adverse reaction to this particular drug could be in likelihood based on their race, age, and gender? "
             "When not sure, please say so. When you are confident, please give likelihoods and explanation. "
             "Please always format your response as follows:\n\n"
+            
             f"1. Clinical Trial\n"
             "    - Is the patient well represented in the clinical trial for that medication for age, sex and ethnicity, consider all trials?\n\n"
             f"2. Statistics about the recorded side effect\n"
@@ -346,6 +301,7 @@ def index():
             "5. Recommendation\n"
             "    - Final summary and any suggested actions for the patient\n\n"
         )
+
         combined_content = f"{prompt}\n\n{results_summary}"
 
         # Call ChatGPT API
@@ -359,10 +315,12 @@ def index():
         )
 
         # Print the response
-        result = response['choices'][0]['message']['content'].strip()
-        # print("ChatGPT Response: \n\n", result)
+        answer = response['choices'][0]['message']['content']
+        # print("ChatGPT Response: \n\n", answer)
+
         # Flatten trial_ids and remove any unwanted formatting
         cleaned_trial_ids = []
+
         for trial_id in trial_ids:
             if isinstance(trial_id, set):  # If the item is a set, convert it to a list and extend
                 cleaned_trial_ids.extend(list(trial_id))
@@ -370,13 +328,14 @@ def index():
                 cleaned_trial_ids.append(trial_id)
 
         # Convert all elements to strings and join without extra characters
-        trial_ids_string = ", ".join(cleaned_trial_ids)
+        trial_ids_string = ', '.join(cleaned_trial_ids)
 
         # Print the cleaned result
-        trials = f"Relevant clinical trials analyzed: {trial_ids_string} are accessible for consultation at https://clinicaltrials.gov/"
-        source = f"Adverse drug reaction reports have been sourced from the MedEffect Canada database: https://www.canada.ca/en/health-canada/services/drugs-health-products/medeffect-canada.html"
+        part1 = f"\nRelevant clinical trials analyzed: {trial_ids_string} are accessible for consultation at https://clinicaltrials.gov/\n"
+        part2 = "\nAdverse drug reaction reports have been sourced from the MedEffect Canada database: https://www.canada.ca/en/health-canada/services/drugs-health-products/medeffect-canada.html\n\n"
 
-        return render_template('home.html', result=result, trials=trials, source=source)
+        result = result + part1 + part2
+        return render_template('home.html', result=result)
     
     return render_template('home.html')
 
