@@ -1,13 +1,11 @@
 Welcome to UnbIAsed-Rx's new machine learning module! To see our current website (not yet updated with the new module), visit [unbiased-rx.com](http://unbiased-rx.com). Our website's repository can be found at [https://github.com/thuy-n/unbIAsed.Rx](https://github.com/thuy-n/unbIAsed.Rx).
 
-To run the web application, make sure to turn on the virtual environment (venv), to have the proper requirements installed. <br>
-Add python code in the code.py file. Add all code in the index() function. See example on how variables are passed into the front-end (HTML). <br>
-The HTML format can be edited in templates/home.html.<br>
-Always turn on .venv before starting to code.<br>
+To run the web application, make sure to turn on the virtual environment (new_venv), to have the proper requirements installed. <br>
+Always turn on new_venv before starting to code.<br>
 
-How to turn on virtual environment (venv):
-- mac: source .venv/bin/activate
-- non-mac (aka powershell): .venv\Scripts\Activate
+How to turn on virtual environment (new_venv):
+- mac: source new_venv/bin/activate
+- non-mac (aka powershell): new_venv\Scripts\Activate
 
 To update requirements list (if new imports were added, always do this out of practice):
 - in the terminal of VS Code
