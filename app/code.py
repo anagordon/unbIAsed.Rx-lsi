@@ -18,7 +18,7 @@ from urllib3.util.retry import Retry
 # Set environment variables to resolve OpenMP runtime conflict and disable oneDNN custom operations
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 os.environ["TF_ENABLE_ONEDNN_OPTS"] = "0"
-os.environ["OPENAI_API_KEY"] = "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" #make sure to insert your own API key here
+os.environ["OPENAI_API_KEY"] = "" #make sure to insert your own API key here
 
 code = Blueprint('code', __name__)
 
